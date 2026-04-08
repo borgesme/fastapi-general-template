@@ -1,6 +1,7 @@
 import uuid
+import asyncio
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.user import UserCreate
@@ -10,19 +11,17 @@ from app.utils.helpers import TokenResponse
 
 
 class AuthService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Session):
         self.db = db
 
-    async def register(self, data: UserCreate) -> User:
-        # 检查用户名是否存在
+    def _sync_register(self, data: UserCreate) -> User:
         stmt = select(User).where(User.username == data.username)
-        result = await self.db.execute(stmt)
+        result = self.db.execute(stmt)
         if result.scalar_one_or_none():
             raise ConflictError("用户名已存在")
 
-        # 检查邮箱是否存在
         stmt = select(User).where(User.email == data.email)
-        result = await self.db.execute(stmt)
+        result = self.db.execute(stmt)
         if result.scalar_one_or_none():
             raise ConflictError("邮箱已被注册")
 
@@ -32,13 +31,16 @@ class AuthService:
             hashed_password=hash_password(data.password),
         )
         self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        self.db.commit()
+        self.db.refresh(user)
         return user
 
-    async def login(self, username: str, password: str) -> TokenResponse:
+    async def register(self, data: UserCreate) -> User:
+        return await asyncio.to_thread(self._sync_register, data)
+
+    def _sync_login(self, username: str, password: str) -> TokenResponse:
         stmt = select(User).where(User.username == username)
-        result = await self.db.execute(stmt)
+        result = self.db.execute(stmt)
         user = result.scalar_one_or_none()
 
         if not user or not verify_password(password, user.hashed_password):
@@ -51,6 +53,9 @@ class AuthService:
         refresh_token, _ = create_refresh_token(user.id)
 
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+    async def login(self, username: str, password: str) -> TokenResponse:
+        return await asyncio.to_thread(self._sync_login, username, password)
 
     async def refresh_access_token(self, refresh_token: str) -> TokenResponse:
         from app.core.security import decode_token, is_token_blacklisted
@@ -65,7 +70,7 @@ class AuthService:
 
         user_id = uuid.UUID(payload["sub"])
         stmt = select(User).where(User.id == user_id)
-        result = await self.db.execute(stmt)
+        result = self.db.execute(stmt)
         user = result.scalar_one_or_none()
 
         if not user or not user.is_active:

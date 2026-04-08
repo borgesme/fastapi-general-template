@@ -1,24 +1,23 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import jwt
 import structlog
-from passlib.context import CryptContext
 
 from app.config import settings
 from app.cache.redis_client import get_redis
 
 logger = structlog.get_logger()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode(), salt).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_access_token(user_id: uuid.UUID, extra_claims: dict | None = None) -> tuple[str, str]:

@@ -18,7 +18,6 @@ class Base(DeclarativeBase):
 
 
 def get_db():
-    """数据库 Session 依赖注入，供 FastAPI Depends() 使用。"""
     db = SessionLocal()
     try:
         yield db

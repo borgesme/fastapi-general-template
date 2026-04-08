@@ -13,7 +13,7 @@ router = APIRouter(prefix="/users", tags=["用户管理"])
 
 @router.get("/me", response_model=ApiResponse[UserResponse])
 async def get_me(user: User = Depends(get_current_user)):
-    return ApiResponse(code=0, msg="success", data=user)
+    return ApiResponse(msg="success", data=user)
 
 
 @router.put("/me", response_model=ApiResponse[UserResponse])
@@ -24,7 +24,7 @@ async def update_me(
 ):
     service = UserService(db)
     updated = await service.update(user, data)
-    return ApiResponse(code=0, msg="更新成功", data=updated)
+    return ApiResponse(msg="更新成功", data=updated)
 
 
 @router.put("/me/password", response_model=ApiResponse[None])
@@ -35,4 +35,4 @@ async def change_password(
 ):
     service = UserService(db)
     await service.update_password(user, data.old_password, data.new_password)
-    return ApiResponse(code=0, msg="密码修改成功", data=None)
+    return ApiResponse(msg="密码修改成功", data=None)

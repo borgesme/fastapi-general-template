@@ -20,7 +20,7 @@ async def register(
 ):
     service = AuthService(db)
     user = await service.register(data)
-    return ApiResponse(code=0, msg="注册成功", data=user)
+    return ApiResponse(msg="注册成功", data=user)
 
 
 @router.post("/login", response_model=ApiResponse[TokenResponse])
@@ -31,7 +31,7 @@ async def login(
 ):
     service = AuthService(db)
     tokens = await service.login(username, password)
-    return ApiResponse(code=0, msg="登录成功", data=tokens)
+    return ApiResponse(msg="登录成功", data=tokens)
 
 
 @router.post("/refresh", response_model=ApiResponse[TokenResponse])
@@ -41,7 +41,7 @@ async def refresh(
 ):
     service = AuthService(db)
     tokens = await service.refresh_access_token(refresh_token)
-    return ApiResponse(code=0, msg="刷新成功", data=tokens)
+    return ApiResponse(msg="刷新成功", data=tokens)
 
 
 @router.post("/logout", response_model=ApiResponse[None])
@@ -56,4 +56,4 @@ async def logout(
     jti = payload.get("jti", "")
     remain = max(int(exp - datetime.now(timezone.utc).timestamp()), 0)
     await add_token_to_blacklist(jti, remain)
-    return ApiResponse(code=0, msg="已成功登出", data=None)
+    return ApiResponse(msg="已成功登出", data=None)

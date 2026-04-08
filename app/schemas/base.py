@@ -5,10 +5,10 @@ T = TypeVar("T")
 
 
 class ApiResponse(BaseModel, Generic[T]):
-    """统一响应包装：code=0 表示成功，其他为业务错误码"""
+    """统一响应包装：code=200 表示成功，其他为业务错误码"""
     model_config = ConfigDict(from_attributes=True)
 
-    code: int = 0
+    code: int = 200
     msg: str = "success"
     data: T | None = None
 

@@ -24,3 +24,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+from app.models.base import Base  # noqa: F401

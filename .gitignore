@@ -71,5 +71,6 @@ temp/
 *.tmp
 *.temp
 
-## ai 
-.claude
+## ai
+!.claude
+.claude/settings.json

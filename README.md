@@ -8,7 +8,11 @@
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
+# Windows PowerShell:
+# venv\Scripts\Activate.ps1
+# Windows bash:
+# source venv/Scripts/activate
 pip install -r requirements.txt
 ```
 

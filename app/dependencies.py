@@ -1,7 +1,9 @@
 import uuid
+
 from fastapi import Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
+import structlog.contextvars
 
 from app.db.session import get_db
 from app.models.user import User
@@ -37,6 +39,7 @@ async def get_current_user(
     if not user.is_active:
         raise ForbiddenError("用户已被禁用")
 
+    structlog.contextvars.bind_contextvars(user_id=str(user.id))
     return user
 
 

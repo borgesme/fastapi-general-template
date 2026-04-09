@@ -37,7 +37,7 @@ def setup_logging() -> None:
             ],
         )
 
-        # 添加文件 sink
+        # 添加生产文件 sink：每日轮转 + gzip 压缩 + 多进程安全
         loguru_logger.add(
             f"{settings.log_dir}/{settings.app_name}.log",
             rotation="00:00",
@@ -46,6 +46,13 @@ def setup_logging() -> None:
             level=settings.log_level,
             serialize=True,
             enqueue=True,
+        )
+        # JSON 结构化日志同时写 stderr，供容器 stdout 采集
+        loguru_logger.add(
+            sys.stderr,
+            level=settings.log_level,
+            serialize=True,
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} [{level}] {message}",
         )
 
 

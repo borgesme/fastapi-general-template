@@ -1,4 +1,3 @@
-import structlog
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -11,17 +10,12 @@ from app.api.v1.router import api_router
 from app.db.init_db import init_db
 from app.cache.redis_client import init_redis, close_redis
 from app.core.exceptions import CustomHTTPException
+from app.core.logger import setup_logging, get_logger
+from app.middleware import RequestIDMiddleware, RequestLoggingMiddleware
 from app.schemas.base import ApiResponse
 
-structlog.configure(
-    processors=[
-        structlog.contextvars.merge_contextvars,
-        structlog.processors.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.dev.ConsoleRenderer(),
-    ],
-)
-logger = structlog.get_logger()
+setup_logging()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -48,6 +42,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 日志中间件（后添加的在外层，所以 RequestLogging 先添加，RequestID 后添加）
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RequestIDMiddleware)
+
 
 # ---------- 全局异常处理器 ----------
 @app.exception_handler(CustomHTTPException)
@@ -70,7 +68,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    logger.error("unhandled_exception", error=str(exc), exc_info=exc)
+    logger.error("unhandled_exception", error=str(exc), exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ApiResponse(code=500, msg="服务器内部错误", data=None).model_dump(),

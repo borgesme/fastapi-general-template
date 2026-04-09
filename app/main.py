@@ -83,3 +83,8 @@ app.include_router(api_router)
 @app.get("/")
 async def root():
     return {"message": f"Welcome to {settings.app_name}"}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}

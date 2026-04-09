@@ -24,5 +24,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
+    # Logging
+    log_level: str = "INFO"
+    log_dir: str = "logs"
+    log_retention_days: int = 14
+
 
 settings = Settings()

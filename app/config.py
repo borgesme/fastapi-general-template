@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_dir: str = "logs"
     log_retention_days: int = 14
+    output_log: bool = True  # 开发环境是否写日志文件（生产环境强制写入）
 
 
 settings = Settings()

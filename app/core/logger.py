@@ -1,10 +1,14 @@
 import sys
 from pathlib import Path
+from typing import Any
 
 import structlog
 from loguru import logger as loguru_logger
 
 from app.config import settings
+
+# 开发模式文件句柄（延迟打开）
+_dev_file_handle: Any = None
 
 
 def setup_logging() -> None:
@@ -17,15 +21,38 @@ def setup_logging() -> None:
     loguru_logger.remove()
 
     if settings.debug:
-        # 开发模式：structlog 彩色控制台输出
-        structlog.configure(
-            processors=[
-                structlog.contextvars.merge_contextvars,
-                structlog.processors.add_log_level,
-                structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-                structlog.dev.ConsoleRenderer(),
-            ],
-        )
+        # 开发模式：structlog 彩色控制台输出，output_log=True 时写文件
+        processors = [
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
+        ]
+
+        # output_log=True：追加写文件（不截断 chain，返回 dict）
+        if settings.output_log:
+            global _dev_file_handle
+            _dev_file_handle = open(log_path / f"{settings.app_name}.log", "a", encoding="utf-8")
+
+            def _dev_file_processor(logger: Any, name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+                ts = event_dict.get("timestamp", "")
+                level = event_dict.get("level", "").lower()
+                event = event_dict.get("event", "")
+                extra = " ".join(
+                    f"{k}={v}"
+                    for k, v in event_dict.items()
+                    if k not in ("timestamp", "level", "event", "logger")
+                )
+                line = f"{ts} [{level}] {name} {event}"
+                if extra:
+                    line += " " + extra
+                _dev_file_handle.write(line + "\n")
+                _dev_file_handle.flush()
+                return event_dict
+
+            processors.append(_dev_file_processor)
+
+        processors.append(structlog.dev.ConsoleRenderer())
+        structlog.configure(processors=processors)
     else:
         # 生产模式：structlog JSON 输出 + loguru 文件 sink
         structlog.configure(
